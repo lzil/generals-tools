@@ -1,8 +1,13 @@
+// GENERALS.IO TOOLS
 
-var COLORS = {'blue': '#00f', 'red': '#f00', 'yellow': '#ffa500', 'darkgreen': '#004600', 'teal': '#008080', 'purple': '#800080', 'green': '#008000', 'maroon': '#800000'}
+var COLORS = {
+	'blue': '#0000ff', 'red': '#ff0000',
+	'orange': '#ffa500', 'darkgreen': '#004600',
+	'teal': '#008080', 'purple': '#800080',
+	'green': '#008000', 'maroon': '#800000'
+}
 
 var yourColor = null;
-// create an observer instance
 var tileObserver = new MutationObserver(function(mutations) {
 	mutations.forEach(function(mutation) {
 		var elt = mutation.target
@@ -26,19 +31,9 @@ var tileObserver = new MutationObserver(function(mutations) {
 				yourColor = props[0]
 			}
 			elt.style.border = '1px solid white'
-			// elt.clr = props[0]
-			// elt.pastGen = true;
 		}
 
-		// keep generals visible with what color they are!
-		// if (elt.type === 'general') {
-		// 	if (elt.className.indexOf('general') === -1) {
-		// 		elt.type = 'city'
-		// 	}
-		// 	elt.className = elt.className.replace(/\bfog\b/,elt.clr)
-		// }
-
-		// someone's general got taken or died
+		// someone's general got taken, or person has left
 		if (props.indexOf('obstacle') !== -1 && elt.type === 'unexplored') {
 			elt.type = 'general'
 			elt.style.border = '1px solid white'
@@ -48,6 +43,7 @@ var tileObserver = new MutationObserver(function(mutations) {
 		// give 'city' type once a city is seen
 		if (props.indexOf('city') !== -1) {
 			elt.type = 'city'
+			// only give a border when you can't see the city
 			if (props.indexOf('') === -1) {
 				elt.nextBorder = '1px dashed ' + COLORS[props[0]]
 			} else {
@@ -55,19 +51,13 @@ var tileObserver = new MutationObserver(function(mutations) {
 			}
 		}
 
-		// once something is a city it is permanently a city, possibly with affiliation
+		// once something is a city it is permanently a city, possibly with a color
 		if (elt.type === 'city') {
 			if (props.indexOf('fog') !== -1) {
-				// elt.className = elt.className.replace(/\bfog\b/,'')
-				// elt.className = elt.className.replace(/\bobstacle\b/,'city')
 				elt.style.border = elt.nextBorder;
 			} else {
 				elt.style.border = '1px solid black'
 			}
-			
-			// if (elt.hasOwnProperty('pastGen')) {
-			// 	elt.className = elt.className.replace(/\bcity\b/,'general')
-			// }
 		}
 
 		// denote seen area where there are no generals
@@ -77,22 +67,13 @@ var tileObserver = new MutationObserver(function(mutations) {
 			} else {
 				elt.style.opacity = '1'
 			}
-			// elt.type = 'nothing'
 		}
-		// if (elt.type === 'nothing') {
-		// 	if (props.indexOf('fog') !== -1) {
-		// 		elt.style.border = '1px dotted #999'
-		// 	} else {
-		// 		elt.style.border = '1px black solid'
-		// 	}
-		// }
 	});    
 });
 
-
+// works continuously in the browser; no need to rerun the code at the start of every game
 var gameObserver = new MutationObserver(function(mutations) {
 	mutations.forEach(function(mutation) {
-		console.log(mutation)
 		if (mutation.addedNodes.length > 0 && mutation.addedNodes[0].id === 'game-page') {
 			tileObserver.disconnect();
 
@@ -100,7 +81,6 @@ var gameObserver = new MutationObserver(function(mutations) {
 				console.log('loading map')
 				var map = document.getElementById('map')
 				var tiles = map.getElementsByTagName('td')
-				console.log(tiles)
 
 				for (var i = 0; i < tiles.length; i++) {
 					var props = tiles[i].className.split(' ')
@@ -120,7 +100,7 @@ var gameObserver = new MutationObserver(function(mutations) {
 					tileObserver.observe(target, config);
 				}
 			}, 100)
-			
+			// arbitrary 100 milliseconds as map loads
 		}
 	})
 })
@@ -128,6 +108,4 @@ var gameObserver = new MutationObserver(function(mutations) {
 var gameConfig = { attributes: true, childList: true, characterData: true }
 var gameTarget = document.getElementById('react-container').children[0]
 
-console.log(gameTarget)
 gameObserver.observe(gameTarget, gameConfig)
-
