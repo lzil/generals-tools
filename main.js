@@ -37,7 +37,6 @@ var tileObserver = new MutationObserver(function(mutations) {
 		if (props.indexOf('obstacle') !== -1 && elt.type === 'unexplored') {
 			elt.type = 'general'
 			elt.style.border = '1px solid white'
-			elt.pastGen = true;
 		}
 
 		// give 'city' type once a city is seen

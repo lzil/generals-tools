@@ -14,5 +14,3 @@ Copy/paste the code in `main.js` into your browser console (can be found via rig
 
 ## Other things
 If you want to contribute or have any feature requests, feel free to make a pull request! Or bring up an issue.
-
-Please don't just copy/paste my code, edit things, and claim it as yours. thx
