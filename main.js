@@ -1,24 +1,9 @@
-var map = document.getElementById('map')
-var tiles = map.getElementsByTagName('td')
-
-for (var i = 0; i < tiles.length; i++) {
-	var props = tiles[i].className.split(' ')
-	if (props.indexOf('obstacle') === -1) {
-		tiles[i].type = 'unexplored'
-		if (props.indexOf('fog') !== -1) {
-			tiles[i].style.opacity = '0.5'
-		}
-	} else {
-		tiles[i].type = 'obstacle'
-	}
-}
 
 var COLORS = {'blue': '#00f', 'red': '#f00', 'yellow': '#ffa500', 'darkgreen': '#004600', 'teal': '#008080', 'purple': '#800080', 'green': '#008000', 'maroon': '#800000'}
 
 var yourColor = null;
-
 // create an observer instance
-var observer = new MutationObserver(function(mutations) {
+var tileObserver = new MutationObserver(function(mutations) {
 	mutations.forEach(function(mutation) {
 		var elt = mutation.target
 		var props = elt.className.split(' ')
@@ -76,6 +61,8 @@ var observer = new MutationObserver(function(mutations) {
 				// elt.className = elt.className.replace(/\bfog\b/,'')
 				// elt.className = elt.className.replace(/\bobstacle\b/,'city')
 				elt.style.border = elt.nextBorder;
+			} else {
+				elt.style.border = '1px solid black'
 			}
 			
 			// if (elt.hasOwnProperty('pastGen')) {
@@ -102,11 +89,45 @@ var observer = new MutationObserver(function(mutations) {
 	});    
 });
 
-for (var i = 0; i < tiles.length; i++) {
-	target = tiles[i]
-	var config = { attributes: true, childList: false, characterData: true };
-	observer.observe(target, config);
-}
 
+var gameObserver = new MutationObserver(function(mutations) {
+	mutations.forEach(function(mutation) {
+		console.log(mutation)
+		if (mutation.addedNodes.length > 0 && mutation.addedNodes[0].id === 'game-page') {
+			tileObserver.disconnect();
 
+			setTimeout(function() {
+				console.log('loading map')
+				var map = document.getElementById('map')
+				var tiles = map.getElementsByTagName('td')
+				console.log(tiles)
+
+				for (var i = 0; i < tiles.length; i++) {
+					var props = tiles[i].className.split(' ')
+					if (props.indexOf('obstacle') === -1) {
+						tiles[i].type = 'unexplored'
+						if (props.indexOf('fog') !== -1) {
+							tiles[i].style.opacity = '0.5'
+						}
+					} else {
+						tiles[i].type = 'obstacle'
+					}
+				}
+
+				for (var i = 0; i < tiles.length; i++) {
+					target = tiles[i]
+					var config = { attributes: true, childList: false, characterData: true };
+					tileObserver.observe(target, config);
+				}
+			}, 100)
+			
+		}
+	})
+})
+
+var gameConfig = { attributes: true, childList: true, characterData: true }
+var gameTarget = document.getElementById('react-container').children[0]
+
+console.log(gameTarget)
+gameObserver.observe(gameTarget, gameConfig)
 
