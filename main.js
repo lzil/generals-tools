@@ -8,6 +8,7 @@ var COLORS = {
 }
 
 var yourColor = null;
+var players = {}
 var tileObserver = new MutationObserver(function(mutations) {
 	mutations.forEach(function(mutation) {
 		var elt = mutation.target
@@ -76,6 +77,47 @@ var gameObserver = new MutationObserver(function(mutations) {
 		if (mutation.addedNodes.length > 0 && mutation.addedNodes[0].id === 'game-page') {
 			tileObserver.disconnect();
 
+			// keeps track of leaderboard
+			setTimeout(function() {
+				var leaderboard = document.getElementById('game-leaderboard').children[0].children
+				var citiesNode = document.createElement('td');
+				citiesNode.textContent = 'Cities';
+				leaderboard[0].appendChild(citiesNode);
+				players = {};
+				// initializing number of cities column of leaderboard
+				for (var i = 1; i < leaderboard.length; i++) {
+					var citiesNode = document.createElement('td');
+					citiesNode.textContent = '1';
+					leaderboard[i].appendChild(citiesNode);
+					var c = leaderboard[i].children
+					players[c[1].classList[1]] = [c[2].textContent, c[3].textContent, c[4].textContent, 0]
+				}
+
+				var turnCounter = document.getElementById('turn-counter')
+				var leaderTurn = function() {
+					setTimeout(function() {
+						leaderTurn();
+						for (var i = 1; i < leaderboard.length; i++) {
+							var c = leaderboard[i].children;
+							turn = parseInt(turnCounter.textContent.substring(5))
+							if (turn % 25 !== 0 && c[2].textContent - players[c[1].classList[1]][0] > players[c[1].classList[1]][2]) {
+								if (c[2].textContent - players[c[1].classList[1]][0] === players[c[1].classList[1]][3]) {
+									players[c[1].classList[1]][2] = c[2].textContent - players[c[1].classList[1]][0];
+									c[4].textContent = c[2].textContent - players[c[1].classList[1]][0]
+								} else {
+									players[c[1].classList[1]][3] = c[2].textContent - players[c[1].classList[1]][0];
+								}
+							}
+							players[c[1].classList[1]][0] = c[2].textContent
+							players[c[1].classList[1]][1] = c[3].textContent
+						}
+					},1000)
+				}
+				// timed so that timesteps correspond with actual timesteps
+				leaderTurn();
+			}, 400)
+			
+
 			setTimeout(function() {
 				console.log('loading map')
 				var map = document.getElementById('map')
@@ -94,7 +136,7 @@ var gameObserver = new MutationObserver(function(mutations) {
 				}
 
 				for (var i = 0; i < tiles.length; i++) {
-					target = tiles[i]
+					var target = tiles[i]
 					var config = { attributes: true, childList: false, characterData: true };
 					tileObserver.observe(target, config);
 				}
