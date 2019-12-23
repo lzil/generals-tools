@@ -13,6 +13,7 @@ var tileObserver = new MutationObserver(function(mutations) {
 	mutations.forEach(function(mutation) {
 		var elt = mutation.target
 		var props = elt.className.split(' ')
+		//console.log(elt)
 
 		// give 'mountain' type once a mountain is seen
 		if (props.indexOf('mountain') !== -1) {
@@ -42,28 +43,41 @@ var tileObserver = new MutationObserver(function(mutations) {
 
 		// give 'city' type once a city is seen
 		if (props.indexOf('city') !== -1) {
-			elt.type = 'city'
-			// only give a border when you can't see the city
-			if (props.indexOf('') === -1) {
-				elt.nextBorder = '1px dashed ' + COLORS[props[0]]
+			
+			if (elt.type === 'unexplored' || elt.type === 'general') {
+				// this was a past general!
+				elt.style.border = '1px solid white'
+				elt.type = 'general'
 			} else {
-				elt.nextBorder = '1px dashed white'
+				// just a city
+				elt.style.border = '1px dashed white'
+				elt.type = 'city'
 			}
+			
+			// only give a border when you can't see the city
+			// if (props.indexOf('') === -1) {
+			// 	elt.nextBorder = '1px ' + COLORS[props[0]]
+			// } else {
+			// 	elt.nextBorder = '1px white'
+			// }
+
+
 		}
 
 		// once something is a city it is permanently a city, possibly with a color
-		if (elt.type === 'city') {
-			if (props.indexOf('fog') !== -1) {
-				elt.style.border = elt.nextBorder;
-			} else {
-				elt.style.border = '1px solid black'
-			}
-		}
+		// if (elt.type === 'city') {
+		// 	if (props.indexOf('fog') !== -1) {
+		// 		elt.style.border = elt.nextBorder;
+		// 	} else {
+		// 		elt.style.border = '1px solid black'
+		// 	}
+		// }
 
-		// denote seen area where there are no generals
+		// denote area that's been seen
 		if (props.indexOf('neutral') !== -1 || (props.indexOf('fog') === -1)) {
 			if (props.indexOf('attackable') !== -1) {
 				elt.style.opacity = '0.4'
+				elt.type = 'explored'
 			} else {
 				elt.style.opacity = '1'
 			}
@@ -78,44 +92,46 @@ var gameObserver = new MutationObserver(function(mutations) {
 			tileObserver.disconnect();
 
 			// keeps track of leaderboard
-			setTimeout(function() {
-				var leaderboard = document.getElementById('game-leaderboard').children[0].children
-				var citiesNode = document.createElement('td');
-				citiesNode.textContent = 'Cities';
-				leaderboard[0].appendChild(citiesNode);
-				players = {};
-				// initializing number of cities column of leaderboard
-				for (var i = 1; i < leaderboard.length; i++) {
-					var citiesNode = document.createElement('td');
-					citiesNode.textContent = '1';
-					leaderboard[i].appendChild(citiesNode);
-					var c = leaderboard[i].children
-					players[c[1].classList[1]] = [c[2].textContent, c[3].textContent, c[4].textContent, 0]
-				}
+			// setTimeout(function() {
+			// 	var leaderboard = document.getElementById('game-leaderboard').children[0].children
+			// 	var citiesNode = document.createElement('td');
+			// 	citiesNode.textContent = 'Cities';
+			// 	leaderboard[0].appendChild(citiesNode);
+			// 	players = {};
+			// 	// initializing number of cities column of leaderboard
+			// 	for (var i = 1; i < leaderboard.length; i++) {
+			// 		var citiesNode = document.createElement('td');
+			// 		citiesNode.textContent = '1';
+			// 		leaderboard[i].appendChild(citiesNode);
+			// 		var c = leaderboard[i].children
+			// 		players[c[1].classList[1]] = [c[2].textContent, c[3].textContent, c[4].textContent, 0]
+			// 	}
 
-				var turnCounter = document.getElementById('turn-counter')
-				var leaderTurn = function() {
-					setTimeout(function() {
-						leaderTurn();
-						for (var i = 1; i < leaderboard.length; i++) {
-							var c = leaderboard[i].children;
-							turn = parseInt(turnCounter.textContent.substring(5))
-							if (turn % 25 !== 0 && c[2].textContent - players[c[1].classList[1]][0] > players[c[1].classList[1]][2]) {
-								if (c[2].textContent - players[c[1].classList[1]][0] === players[c[1].classList[1]][3]) {
-									players[c[1].classList[1]][2] = c[2].textContent - players[c[1].classList[1]][0];
-									c[4].textContent = c[2].textContent - players[c[1].classList[1]][0]
-								} else {
-									players[c[1].classList[1]][3] = c[2].textContent - players[c[1].classList[1]][0];
-								}
-							}
-							players[c[1].classList[1]][0] = c[2].textContent
-							players[c[1].classList[1]][1] = c[3].textContent
-						}
-					},1000)
-				}
-				// timed so that timesteps correspond with actual timesteps
-				leaderTurn();
-			}, 400)
+			// 	var turnCounter = document.getElementById('turn-counter')
+			// 	var leaderTurn = function() {
+			// 		console.log('leaderTurn called')
+			// 		setTimeout(function() {
+			// 			leaderTurn();
+			// 			// cities calculator
+			// 			for (var i = 1; i < leaderboard.length; i++) {
+			// 				var c = leaderboard[i].children;
+			// 				turn = parseInt(turnCounter.textContent.substring(5))
+			// 				if (turn % 25 !== 0 && c[2].textContent - players[c[1].classList[1]][0] > players[c[1].classList[1]][2]) {
+			// 					if (c[2].textContent - players[c[1].classList[1]][0] === players[c[1].classList[1]][3]) {
+			// 						players[c[1].classList[1]][2] = c[2].textContent - players[c[1].classList[1]][0];
+			// 						c[4].textContent = c[2].textContent - players[c[1].classList[1]][0]
+			// 					} else {
+			// 						players[c[1].classList[1]][3] = c[2].textContent - players[c[1].classList[1]][0];
+			// 					}
+			// 				}
+			// 				players[c[1].classList[1]][0] = c[2].textContent
+			// 				players[c[1].classList[1]][1] = c[3].textContent
+			// 			}
+			// 		},1000)
+			// 	}
+			// 	// timed so that timesteps correspond with actual timesteps
+			// 	leaderTurn();
+			// }, 400)
 			
 
 			setTimeout(function() {
@@ -126,9 +142,15 @@ var gameObserver = new MutationObserver(function(mutations) {
 				for (var i = 0; i < tiles.length; i++) {
 					var props = tiles[i].className.split(' ')
 					if (props.indexOf('obstacle') === -1) {
-						tiles[i].type = 'unexplored'
 						if (props.indexOf('fog') !== -1) {
+							tiles[i].type = 'unexplored'
 							tiles[i].style.opacity = '0.5'
+						} else {
+							if (props.indexOf('city') !== -1) {
+								tiles[i].type = 'city'
+							} else {
+								tiles[i].type = 'explored'
+							}
 						}
 					} else {
 						tiles[i].type = 'obstacle'
