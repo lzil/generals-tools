@@ -11,8 +11,10 @@ var COLORS = {
 	'purple-blue': '#483d8b'
 }
 
-var yourColor = null;
+var leaderboard = null;
 var players = {}
+var gamma = 0.7
+
 var tileObserver = new MutationObserver(function(mutations) {
 	mutations.forEach(function(mutation) {
 		var elt = mutation.target
@@ -21,7 +23,7 @@ var tileObserver = new MutationObserver(function(mutations) {
 		// give 'mountain' type once a mountain is seen
 		if (props.indexOf('mountain') !== -1) {
 			elt.type = 'mountain'
-			elt.style.opacity = 1
+			elt.style.backgroundColor = 'rgb(220, 220, 220)'
 		}
 
 		// once something is a mountain it is permanently a mountain
@@ -34,13 +36,11 @@ var tileObserver = new MutationObserver(function(mutations) {
 		// draw a white border around seen generals
 		if (props.indexOf('general') !== -1 && elt.type !== 'general') {
 			elt.type = 'general'
-			if (!yourColor) {
-				yourColor = props[0]
-			}
 			elt.style.border = '1px solid white'
 		}
 
 		// someone's general got taken, or person has left
+		// this code now doesn't work because of server-side game update. oh well.
 		if (props.indexOf('obstacle') !== -1 && elt.type === 'unexplored') {
 			elt.type = 'general'
 			elt.style.border = '1px solid white'
@@ -63,18 +63,48 @@ var tileObserver = new MutationObserver(function(mutations) {
 			}
 		}
 
-		// denote area that's been seen
+		// denote area that's been seen, is not any of the previous things
 		if (props.indexOf('fog') === -1) {
 			if (elt.type == 'unexplored') {
 				elt.type = 'explored'
 			}
-			elt.style.opacity = 1
-		} else if (elt.type !== 'mountain') {
-			elt.style.opacity = 0.5
 		}
+		elt.style.opacity = 1
 
 	});    
 });
+
+var turnObserver = new MutationObserver(function(mutations) {
+	mutations.forEach(function(mutation) {
+		turnText = mutation.target.textContent
+		if (turnText.slice(-1) == '.') {
+			return;
+		}
+		var turn = parseInt(turnText)
+		// var turn = parseInt(document.getElementById('turn-counter').textContent.substring[5])
+		console.log('turn', turn)
+		// imperfect cities calculator
+		for (var i = 1; i < leaderboard.length; i++) {
+			var c = leaderboard[i].children;
+			var player_data = players[c[1].classList[1]]
+			var army_delta = c[2].textContent - player_data[0]
+			if (turn % 25 == 0) {
+				// subtract the amount of land they have
+				army_delta -= c[3].textContent
+			}
+			// update army, land, cities respectively
+			player_data[0] = c[2].textContent
+			player_data[1] = c[3].textContent
+			if (army_delta > 0) {
+				player_data[2] = gamma * player_data[2] + (1 - gamma) * army_delta
+				// c[4].textContent = Math.round(player_data[2] * 10) / 10
+				c[0].textContent = Math.round(player_data[2] * 10) / 10
+			}
+
+			players[c[1].classList[1]] = player_data
+		}
+	})
+})
 
 // works continuously in the browser; no need to rerun the code at the start of every game
 var gameObserver = new MutationObserver(function(mutations) {
@@ -83,48 +113,31 @@ var gameObserver = new MutationObserver(function(mutations) {
 			tileObserver.disconnect();
 
 			// keeps track of leaderboard
-			// setTimeout(function() {
-			// 	var leaderboard = document.getElementById('game-leaderboard').children[0].children
-			// 	var citiesNode = document.createElement('td');
-			// 	citiesNode.textContent = 'Cities';
-			// 	leaderboard[0].appendChild(citiesNode);
-			// 	players = {};
-			// 	// initializing number of cities column of leaderboard
-			// 	for (var i = 1; i < leaderboard.length; i++) {
-			// 		var citiesNode = document.createElement('td');
-			// 		citiesNode.textContent = '1';
-			// 		leaderboard[i].appendChild(citiesNode);
-			// 		var c = leaderboard[i].children
-			// 		players[c[1].classList[1]] = [c[2].textContent, c[3].textContent, c[4].textContent, 0]
-			// 	}
+			// NOTE: we can't add an extra column, or game will detect the mod :)
+			setTimeout(function() {
+				leaderboard = document.getElementById('game-leaderboard').children[0].children
+				// var citiesNode = document.createElement('td');
+				// citiesNode.textContent = 'Cities';
+				// leaderboard[0].appendChild(citiesNode);
+				players = {};
+				// initializing number of cities column of leaderboard
+				for (var i = 1; i < leaderboard.length; i++) {
+					// var citiesNode = document.createElement('td');
+					// citiesNode.textContent = '1';
+					// leaderboard[i].appendChild(citiesNode);
+					var c = leaderboard[i].children
+					// c[1].classList[1] is the color
+					// army, land, cities
+					// players[c[1].classList[1]] = [c[2].textContent, c[3].textContent, c[4].textContent]
+					players[c[1].classList[1]] = [c[2].textContent, c[3].textContent, 1]
+				}
 
-			// 	var turnCounter = document.getElementById('turn-counter')
-			// 	var leaderTurn = function() {
-			// 		console.log('leaderTurn called')
-			// 		setTimeout(function() {
-			// 			leaderTurn();
-			// 			// cities calculator
-			// 			for (var i = 1; i < leaderboard.length; i++) {
-			// 				var c = leaderboard[i].children;
-			// 				turn = parseInt(turnCounter.textContent.substring(5))
-			// 				if (turn % 25 !== 0 && c[2].textContent - players[c[1].classList[1]][0] > players[c[1].classList[1]][2]) {
-			// 					if (c[2].textContent - players[c[1].classList[1]][0] === players[c[1].classList[1]][3]) {
-			// 						players[c[1].classList[1]][2] = c[2].textContent - players[c[1].classList[1]][0];
-			// 						c[4].textContent = c[2].textContent - players[c[1].classList[1]][0]
-			// 					} else {
-			// 						players[c[1].classList[1]][3] = c[2].textContent - players[c[1].classList[1]][0];
-			// 					}
-			// 				}
-			// 				players[c[1].classList[1]][0] = c[2].textContent
-			// 				players[c[1].classList[1]][1] = c[3].textContent
-			// 			}
-			// 		},1000)
-			// 	}
-			// 	// timed so that timesteps correspond with actual timesteps
-			// 	leaderTurn();
-			// }, 400)
+				var turnCounter = document.getElementById('turn-counter')
+				var turnConfig = { attributes: true, childList: true, characterData: true, subtree: true};
+				turnObserver.observe(turnCounter, turnConfig)
+
+			}, 400)
 			
-
 			setTimeout(function() {
 				console.log('loading map')
 				var map = document.getElementById('gameMap')
@@ -150,7 +163,7 @@ var gameObserver = new MutationObserver(function(mutations) {
 								// is a mountain 
 								tiles[i].type = 'mountain'
 								tiles[i].style.opacity = 1
-							} else {
+							} else if (props.indexOf('city') !== -1) {
 								// is a city
 								tiles[i].type = 'city'
 							}
